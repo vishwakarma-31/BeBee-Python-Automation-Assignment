@@ -1,0 +1,15 @@
+email,password,success_status
+fake_email2@gmail.com,WrongPass2,invalid_credentials
+your_test_email@gmail.com,TestPass123!,invalid_credentials
+fake_email1@gmail.com,WrongPass1,invalid_credentials
+john.doe.testing@gmail.com,JohnTest@2026,invalid_credentials
+sarah.demo.account@gmail.com,SarahPass#45,invalid_credentials
+michael.temp.user@gmail.com,TempUser789!,invalid_credentials
+emma.practice.login@gmail.com,EmmaSecure12$,invalid_credentials
+alex.sample.mail@gmail.com,AlexLogin@99,invalid_credentials
+qa.testing.bot@gmail.com,QATest!456,invalid_credentials
+dev.account.check@gmail.com,DevCheck#2026,invalid_credentials
+automation.user.test@gmail.com,AutoUser@321,invalid_credentials
+staging.account.demo@gmail.com,StagePass!2026,invalid_credentials
+frontend.testing01@gmail.com,FrontEnd#88,invalid_credentials
+backend.testing02@gmail.com,BackEnd@77,invalid_credentials
