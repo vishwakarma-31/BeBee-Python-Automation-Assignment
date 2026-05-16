@@ -2,7 +2,6 @@ import logging
 import requests
 
 def run_login(session, email, password):
-    # This is the main function to log in
     result = {
         "email": email,
         "password": password,
@@ -14,7 +13,6 @@ def run_login(session, email, password):
     try:
         logging.info("Trying to login %s", email)
 
-        # Step 1: visit login page
         try:
             session.get("https://bebee.com/auth/login?callbackUrl=%2Fin", timeout=30)
         except Exception as e:
@@ -22,7 +20,6 @@ def run_login(session, email, password):
             result["error"] = str(e)
             return result
 
-        # Step 2: fetch providers
         try:
             session.get("https://bebee.com/api/auth/providers", timeout=30)
         except Exception as e:
@@ -30,7 +27,7 @@ def run_login(session, email, password):
             result["error"] = "Failed to fetch providers: %s" % e
             return result
 
-        # Step 3: fetch csrf token
+        # get the security token
         csrf_token = None
         try:
             resp = session.get("https://bebee.com/api/auth/csrf", timeout=30)
@@ -46,7 +43,6 @@ def run_login(session, email, password):
             result["error"] = "No CSRF token in response"
             return result
 
-        # Step 4: submit credentials
         payload = {
             "email": email,
             "password": password,
@@ -75,13 +71,13 @@ def run_login(session, email, password):
             result["error"] = str(e)
             return result
 
-        # Sometimes BeBee sends a magic link if the account is Google OAuth
+        # handle Google accounts that send a magic link
         if post_resp.status_code == 401 and "MAGIC_LINK_SENT" in body_text:
             result["status"] = "magic_link_sent"
             result["error"] = "Account uses Google Auth, sent a magic link instead."
             return result
 
-        # Step 5: Check if it actually worked
+        # check if we actually logged in
         try:
             check_resp = session.get("https://bebee.com/api/auth/session", timeout=30)
             user_data = check_resp.json().get("user", {})

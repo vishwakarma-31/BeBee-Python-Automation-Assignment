@@ -2,7 +2,7 @@ import requests
 import logging
 
 def build_session(proxy=None, timeout=30):
-    # Just setup a basic session with headers so we don't look like a bot
+    # make sure we don't look like a bot
     session = requests.Session()
     
     session.headers.update({
@@ -16,18 +16,18 @@ def build_session(proxy=None, timeout=30):
 
     if proxy:
         session.proxies = {"http": proxy, "https": proxy}
-        logging.info(f"Using proxy: {proxy}")
+        logging.info("Using proxy: %s", proxy)
 
     session.default_timeout = timeout
     return session
 
 def warm_up_session(session):
-    # Make a first request to get the initial tracking cookies
+    # get the first cookies before doing anything else
     try:
         resp = session.get("https://bebee.com/", timeout=session.default_timeout)
         resp.raise_for_status()
-        logging.debug(f"Warm up worked. Cookies: {session.cookies.keys()}")
+        logging.debug("Warm up worked.")
         return True
     except Exception as e:
-        logging.error(f"Could not warm up session: {e}")
+        logging.error("Could not warm up session: %s", e)
         return False

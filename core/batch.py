@@ -8,11 +8,10 @@ import os
 from core.session import build_session, warm_up_session
 from core.login import run_login
 
-# Lock so threads don't overwrite each other in the csv
+# keep threads from writing over each other
 csv_lock = threading.Lock()
 
 def write_result(path, email, password, status):
-    # lock the file while writing so data doesn't get messed up
     with csv_lock:
         file_exists = os.path.exists(path)
         with open(path, "a", newline="", encoding="utf-8") as f:
@@ -57,7 +56,6 @@ def run_single_job(account, proxy, output_csv):
 def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
     logging.info("Starting batch login from %s with %s workers", input_csv, workers)
 
-    # read accounts from the input csv
     accounts = []
     with open(input_csv, "r", encoding="utf-8") as f:
         reader = csv.DictReader(f)
@@ -68,7 +66,6 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
                     "password": row["password"].strip()
                 })
 
-    # initialize counters
     summary = {
         "total": len(accounts),
         "succeeded": 0,
@@ -78,7 +75,6 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
 
     proxy_iter = cycle(proxies) if proxies else None
 
-    # if workers is 1, just do a normal loop
     if workers == 1:
         for acc in accounts:
             p = next(proxy_iter) if proxy_iter else None
@@ -90,7 +86,6 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
             else:
                 summary["failed"] += 1
     else:
-        # if more than 1 worker, use thread pool
         with ThreadPoolExecutor(max_workers=workers) as executor:
             futures = []
             for acc in accounts:

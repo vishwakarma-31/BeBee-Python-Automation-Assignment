@@ -10,7 +10,7 @@ from core.batch import run_batch_login
 from core.signup import run_signup, extract_verification_token
 
 def setup_logger(level="INFO"):
-    # Just a simple logger setup
+    # basic logger setup
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(
         level=numeric_level,
@@ -18,7 +18,7 @@ def setup_logger(level="INFO"):
     )
 
 def load_proxy_file(filepath):
-    # simple function to read proxies from a text file
+    # read proxies from a text file
     proxies = []
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
@@ -74,7 +74,7 @@ def do_signup(args):
         if result["success"]:
             print(f"Success! Signed up {args.email}")
             
-            # Save it to a csv file as required by the assignment
+            # save to csv
             file_exists = os.path.isfile(args.output)
             with open(args.output, "a", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
@@ -120,13 +120,11 @@ def main():
     
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    # Login command setup
     lp = subparsers.add_parser("login", help="Login to a single account")
     lp.add_argument("--email", required=True)
     lp.add_argument("--password", required=True)
     lp.add_argument("--proxy", default=None)
 
-    # Signup command setup
     sp = subparsers.add_parser("signup", help="Signup a single account")
     sp.add_argument("--email", required=True)
     sp.add_argument("--password", required=True)
@@ -139,7 +137,6 @@ def main():
     sp.add_argument("--proxy", default=None)
     sp.add_argument("--output", default="successful_signups.csv")
 
-    # Batch command setup
     bp = subparsers.add_parser("batch", help="Run batch logins from CSV")
     bp.add_argument("--input", required=True)
     bp.add_argument("--output", required=True)

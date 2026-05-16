@@ -5,19 +5,17 @@ import re
 from core.session import build_session
 
 def random_name(length=7):
-    # just pick some random letters for the fake name
     letters = string.ascii_lowercase
     return random.choice(string.ascii_uppercase) + ''.join(random.choices(letters, k=length-1))
 
 def extract_verification_token(email_body):
-    # Try to find the token in the email link
+    # get the token from the email link
     match = re.search(r"token=([A-Za-z0-9\-_\.%]+)", email_body)
     if match:
         return match.group(1)
     return None
 
 def run_signup(email, password, proxy=None, first_name=None, last_name=None, location_city="New York", verification_token=None, photo_path=None, prompt_token=False):
-    # Main function to sign up a new account
     result = {
         "email": email,
         "password": password,
@@ -29,10 +27,9 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
     try:
         logging.info("Starting signup for %s", email)
         
-        # Step 1: Start HTTP session (optionally with proxies)
         session = build_session(proxy)
 
-        # Step 2: Hit the required /br endpoint and get an empty session
+        # get the initial cookies
         try:
             session.get("https://bebee.com/br", timeout=30)
             session.get("https://bebee.com/api/auth/session", timeout=30)
@@ -40,7 +37,6 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
             result["error"] = "Could not get initial session: %s" % e
             return result
 
-        # Step 3: Get location ID
         location_id = None
         try:
             loc_resp = session.get("https://bebee.com/api/search/locations", params={"q": location_city}, timeout=30)
@@ -50,7 +46,6 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
         except Exception as e:
             logging.warning("Could not get location ID for %s", location_city)
 
-        # Step 4: Create user
         payload = {
             "firstName": first_name or random_name(),
             "lastName": last_name or random_name(),
@@ -69,13 +64,13 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
                 result["error"] = "Email already registered"
                 return result
             elif user_resp.status_code == 404 or user_resp.status_code == 405:
-                # 404/405 means BeBee has disabled the endpoint
+                # tell user if the endpoint is turned off
                 logging.warning("BeBee's email signup endpoint appears to be disabled currently.")
                 result["status"] = "signup_error"
                 result["error"] = "Endpoint disabled by server."
                 return result
             elif user_resp.status_code not in [200, 201]:
-                # If it's 400 Bad Request or anything else, stop here.
+                # stop if the server rejects it
                 result["status"] = "signup_error"
                 result["error"] = "Failed to create user. Status: %s" % user_resp.status_code
                 return result
@@ -85,7 +80,6 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
             result["error"] = str(e)
             return result
 
-        # Step 5: Wait for verification token
         if not verification_token and prompt_token:
             print("\nUser creation request sent for %s." % email)
             print("Please check your email inbox and paste the full verification link below:")
@@ -102,7 +96,6 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
             result["error"] = "We need the verification token to continue."
             return result
 
-        # Step 6: Verify email
         try:
             ver_resp = session.post("https://bebee.com/api/auth/verify-email", json={"token": verification_token}, timeout=30)
             if ver_resp.status_code not in [200, 201, 204]:
@@ -114,7 +107,6 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
             result["error"] = str(e)
             return result
 
-        # Step 7: Upload photo
         if photo_path:
             try:
                 with open(photo_path, "rb") as f:
@@ -123,7 +115,7 @@ def run_signup(email, password, proxy=None, first_name=None, last_name=None, loc
             except Exception as e:
                 logging.warning("Failed to upload photo: %s", e)
 
-        # Step 8: Confirm it worked
+        # check if the signup worked
         try:
             check_resp = session.get("https://bebee.com/api/auth/session", timeout=30)
             user_data = check_resp.json().get("user", {})
