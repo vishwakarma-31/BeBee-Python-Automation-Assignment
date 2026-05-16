@@ -28,6 +28,9 @@ def warm_up_session(session):
         resp.raise_for_status()
         logging.debug("Warm up worked.")
         return True
+    except requests.exceptions.ProxyError as e:
+        logging.error("Proxy failure during warm up: %s", e)
+        return False
     except Exception as e:
-        logging.error("Could not warm up session: %s", e)
+        logging.error("Network error during warm up: %s", e)
         return False
