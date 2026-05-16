@@ -1,26 +1,4 @@
-# BeBee Automation — Architecture
-
-## Project Structure
-
-```
-bebee/
-├── main.py                    # CLI entrypoint (argparse subcommands)
-├── requirements.txt
-├── core/
-│   ├── session.py             # HTTP session builder + warm-up
-│   ├── login.py               # Login workflow — HAR verified
-│   ├── signup.py              # Signup workflow — assumed (see NOTES.md)
-│   └── batch.py               # Batch processor with parallel execution
-├── utils/
-│   ├── logging_config.py      # Console + rotating file logging
-│   └── proxy_loader.py        # Proxy file loader
-├── docs/
-│   ├── ARCHITECTURE.md        # This file
-│   ├── WORKFLOW.md            # URL-to-step mapping, payloads, responses
-│   └── NOTES.md               # Assumptions, risks, improvements
-├── logs/                      # Runtime logs (auto-created)
-└── data/                      # Architecture Note
-```
+# Architecture Note
 
 Here is a short note on how I built this project!
 
@@ -45,51 +23,6 @@ I decided to keep things simple but organized. I split the code into a `core` fo
 
 ## Why I did it this way
 
-I didn't want to overcomplicate things with too many extra files. The `requests` library handles the session cookies automatically, which is awesome. For the batch processing, `ThreadPoolExecutor` made it really easy to run things in parallel without having to write crazy manual threading code. I also made sure every thread gets its own `requests.Session()` because sharing a single session across threads usually causes weird bugs. would corrupt rows.
+I didn't want to overcomplicate things with too many extra files. The `requests` library handles the session cookies automatically, which is awesome. For the batch processing, `ThreadPoolExecutor` made it really easy to run things in parallel without having to write crazy manual threading code. I also made sure every thread gets its own `requests.Session()` because sharing a single session across threads usually causes weird bugs.
 
-### Round-robin proxy assignment
-When a proxy file is provided, proxies are assigned per job using `itertools.cycle()`.
-BeBee's credentials endpoint returns HTTP 200 and HTTP 401 in ways that don't
-reliably indicate auth success. The definitive check is always re-fetching
-`/api/auth/session` and verifying `user.email` in the response.
-
-### Magic link is its own outcome
-`MAGIC_LINK_SENT` (HTTP 401 from BeBee when account is OAuth-only) is tracked
-separately in output CSV and batch summary — it's not a failure.
-
-## Failure Type Separation
-
-| Failure | Exception / Detection | CSV Status |
-|---------|----------------------|------------|
-| Proxy failure | `requests.exceptions.ProxyError` | `proxy_error` |
-| Network failure | `requests.exceptions.RequestException` | `network_error` |
-| Email verification failure | `EmailVerificationError` | `email_verification_error` |
-| Login failure | Session check returns False | `invalid_credentials` |
-| Magic link sent | 401 + MAGIC_LINK_SENT in body | `magic_link_sent` |
-| Response parse failure | `ValueError` on `.json()` | `parse_error` |
-| Unexpected | Catch-all `Exception` | `unknown_error` |
-
-## Data Flow — Batch Login
-
-```
-Input CSV (email, password)
-        │
-        ▼
-  _load_input_csv()
-        │
-        ▼
-  [max_workers=1]          [max_workers=N]
-  for loop                 ThreadPoolExecutor
-        │                          │
-        ▼                          ▼
-  _run_one(account, proxy)   _run_one() × N (parallel)
-  build_session()
-  warm_up_session()
-  run_login()
-        │
-        ▼
-  _write_row()  ← protected by _csv_lock
-        │
-        ▼
-Output CSV (email, password, success_status)
-```
+For error handling, instead of making big complicated custom error classes, I just used a `status` string in the dictionary returned by the functions (like `network_error` or `invalid_credentials`). This made it really easy to see why something failed and log it out directly to the console.

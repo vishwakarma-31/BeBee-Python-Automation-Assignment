@@ -31,7 +31,8 @@ Since I couldn't test this with live traffic, I mapped it out based on the targe
 
 | Step | Method | URL | Why I used it (Purpose) |
 |------|--------|-----|--------------------------|
-| 1 | GET | `https://bebee.com/` (or `https://bebee.com/br`) | To start the session. I noticed `/br` is for the Brazil region, so we can use either one to get our first cookies. |
+| 1a | GET | `https://bebee.com/` | To hit the main homepage and initialize the very first tracking cookies. |
+| 1b | GET | `https://bebee.com/br` | To hit the Brazilian regional page. The assignment explicitly required this URL, likely because BeBee assigns specific localized region cookies (like language preferences) when visiting this endpoint, which helps the bot look more like a real user browsing different parts of the site before signing up. |
 | 2 | GET | `https://bebee.com/api/auth/session` | To start an empty guest session. |
 | 3 | GET | `https://bebee.com/api/search/locations?q=<city>` | To search for a city and get its location ID. |
 | 4 | POST | `https://bebee.com/api/users` | To create the actual account. This triggers the email to be sent to the user. |

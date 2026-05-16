@@ -12,7 +12,7 @@ def run_login(session, email, password):
     }
 
     try:
-        logging.info(f"Trying to login {email}")
+        logging.info("Trying to login %s", email)
 
         # Step 1: visit login page
         try:
@@ -26,7 +26,9 @@ def run_login(session, email, password):
         try:
             session.get("https://bebee.com/api/auth/providers", timeout=30)
         except Exception as e:
-            pass # sometimes this fails but it might not be a big deal
+            result["status"] = "network_error"
+            result["error"] = "Failed to fetch providers: %s" % e
+            return result
 
         # Step 3: fetch csrf token
         csrf_token = None
@@ -86,7 +88,7 @@ def run_login(session, email, password):
             if user_data.get("email", "").lower() == email.lower():
                 result["success"] = True
                 result["status"] = "success"
-                logging.info(f"Successfully logged in {email}")
+                logging.info("Successfully logged in %s", email)
             else:
                 result["status"] = "invalid_credentials"
                 result["error"] = "Session check failed. Wrong password."

@@ -2,6 +2,7 @@ import logging
 import random
 import string
 import re
+from core.session import build_session
 
 def random_name(length=7):
     # just pick some random letters for the fake name
@@ -15,7 +16,7 @@ def extract_verification_token(email_body):
         return match.group(1)
     return None
 
-def run_signup(session, email, password, first_name=None, last_name=None, location_city="New York", verification_token=None, photo_path=None, prompt_token=False):
+def run_signup(email, password, proxy=None, first_name=None, last_name=None, location_city="New York", verification_token=None, photo_path=None, prompt_token=False):
     # Main function to sign up a new account
     result = {
         "email": email,
@@ -26,13 +27,17 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
     }
 
     try:
-        logging.info(f"Starting signup for {email}")
+        logging.info("Starting signup for %s", email)
+        
+        # Step 1: Start HTTP session (optionally with proxies)
+        session = build_session(proxy)
 
-        # Step 2: Get empty session
+        # Step 2: Hit the required /br endpoint and get an empty session
         try:
+            session.get("https://bebee.com/br", timeout=30)
             session.get("https://bebee.com/api/auth/session", timeout=30)
         except Exception as e:
-            result["error"] = f"Could not get initial session: {e}"
+            result["error"] = "Could not get initial session: %s" % e
             return result
 
         # Step 3: Get location ID
@@ -43,7 +48,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
             if isinstance(data, list) and len(data) > 0:
                 location_id = data[0].get("id") or data[0].get("locationId")
         except Exception as e:
-            logging.warning(f"Could not get location ID for {location_city}")
+            logging.warning("Could not get location ID for %s", location_city)
 
         # Step 4: Create user
         payload = {
@@ -57,7 +62,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
 
         try:
             user_resp = session.post("https://bebee.com/api/users", json=payload, timeout=30)
-            logging.info(f"User creation API returned status: {user_resp.status_code}")
+            logging.info("User creation API returned status: %s", user_resp.status_code)
             
             if user_resp.status_code == 409:
                 result["status"] = "signup_error"
@@ -72,7 +77,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
             elif user_resp.status_code not in [200, 201]:
                 # If it's 400 Bad Request or anything else, stop here.
                 result["status"] = "signup_error"
-                result["error"] = f"Failed to create user. Status: {user_resp.status_code}"
+                result["error"] = "Failed to create user. Status: %s" % user_resp.status_code
                 return result
                 
         except Exception as e:
@@ -82,7 +87,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
 
         # Step 5: Wait for verification token
         if not verification_token and prompt_token:
-            print(f"\nUser creation request sent for {email}.")
+            print("\nUser creation request sent for %s." % email)
             print("Please check your email inbox and paste the full verification link below:")
             link = input("Link: ").strip()
             verification_token = extract_verification_token(link)
@@ -116,7 +121,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
                     files = {"photo": (photo_path.split("/")[-1], f, "image/jpeg")}
                     session.post("https://bebee.com/api/upload/photo", files=files, timeout=30)
             except Exception as e:
-                logging.warning(f"Failed to upload photo: {e}")
+                logging.warning("Failed to upload photo: %s", e)
 
         # Step 8: Confirm it worked
         try:
@@ -125,7 +130,7 @@ def run_signup(session, email, password, first_name=None, last_name=None, locati
             if user_data.get("email", "").lower() == email.lower():
                 result["success"] = True
                 result["status"] = "success"
-                logging.info(f"Signup successful for {email}")
+                logging.info("Signup successful for %s", email)
             else:
                 result["status"] = "failed"
                 result["error"] = "Account created but session not active."

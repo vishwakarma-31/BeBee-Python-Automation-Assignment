@@ -30,7 +30,7 @@ def load_proxy_file(filepath):
 
 def do_login(args):
     logger = logging.getLogger("bebee")
-    logger.info(f"Starting single login for {args.email}")
+    logger.info("Starting single login for %s", args.email)
 
     try:
         session = build_session(args.proxy)
@@ -54,20 +54,15 @@ def do_login(args):
 
 def do_signup(args):
     logger = logging.getLogger("bebee")
-    logger.info(f"Starting signup for {args.email}")
+    logger.info("Starting signup for %s", args.email)
 
     try:
-        session = build_session(args.proxy)
-        if not warm_up_session(session):
-            print("Error: Could not reach bebee.com.")
-            return 1
-
         token = args.token
 
         result = run_signup(
-            session=session,
             email=args.email,
             password=args.password,
+            proxy=args.proxy,
             first_name=args.first_name,
             last_name=args.last_name,
             location_city=args.city,

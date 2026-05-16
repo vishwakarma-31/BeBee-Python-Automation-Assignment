@@ -24,28 +24,38 @@ def write_result(path, email, password, status):
 def run_single_job(account, proxy, output_csv):
     email = account["email"]
     password = account["password"]
-    logging.info(f"Starting job for {email}")
+    logging.info("Starting job for %s", email)
 
     try:
         session = build_session(proxy)
         if not warm_up_session(session):
             write_result(output_csv, email, password, "network_error")
+            logging.info("Finished job for %s", email)
+            logging.warning("Job failed for %s -> network_error", email)
             return "network_error"
         
         result = run_login(session, email, password)
         status = result["status"] if not result["success"] else "success"
         
         write_result(output_csv, email, password, status)
-        logging.info(f"Finished job for {email} -> {status}")
+        
+        logging.info("Finished job for %s", email)
+        if status == "success":
+            logging.info("Job succeeded for %s", email)
+        else:
+            logging.warning("Job failed for %s -> %s", email, status)
+            
         return status
 
     except Exception as e:
-        logging.error(f"Error on {email}: {e}")
+        logging.error("Error on %s: %s", email, e)
         write_result(output_csv, email, password, "unknown_error")
+        logging.info("Finished job for %s", email)
+        logging.warning("Job failed for %s -> unknown_error", email)
         return "unknown_error"
 
 def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
-    logging.info(f"Starting batch login from {input_csv} with {workers} workers")
+    logging.info("Starting batch login from %s with %s workers", input_csv, workers)
 
     # read accounts from the input csv
     accounts = []
