@@ -7,7 +7,7 @@ import csv
 from core.session import build_session, warm_up_session
 from core.login import run_login
 from core.batch import run_batch_login
-from core.signup import run_signup, extract_verification_token
+from core.signup import run_signup
 
 def setup_logger(level="INFO"):
     # basic logger setup
@@ -20,12 +20,15 @@ def setup_logger(level="INFO"):
 def load_proxy_file(filepath):
     # read proxies from a text file
     proxies = []
+    logger = logging.getLogger("bebee")
     if os.path.exists(filepath):
         with open(filepath, 'r') as f:
             for line in f:
                 p = line.strip()
                 if p:
                     proxies.append(p)
+    else:
+        logger.warning("Proxy file not found: %s", filepath)
     return proxies
 
 def do_login(args):
@@ -36,7 +39,7 @@ def do_login(args):
         session = build_session(args.proxy)
         is_warm = warm_up_session(session)
         if not is_warm:
-            print("Error: Could not reach bebee.com. Check network.")
+            logger.error("[NETWORK_ERROR] Could not reach bebee.com. Check network.")
             return 1
 
         result = run_login(session, args.email, args.password)
@@ -45,11 +48,12 @@ def do_login(args):
             print(f"Success! Logged in as {args.email}")
             return 0
         else:
-            print(f"Failed! {args.email} - {result.get('status')}: {result.get('error')}")
+            status = result.get('status', 'UNKNOWN').upper()
+            logger.error("[%s] Failed for %s: %s", status, args.email, result.get('error'))
             return 1
 
     except Exception as e:
-        print(f"Got an error: {e}")
+        logger.error("[UNKNOWN_ERROR] Got an error: %s", e)
         return 1
 
 def do_signup(args):
@@ -84,11 +88,12 @@ def do_signup(args):
             print(f"Saved to {args.output}")
             return 0
         else:
-            print(f"Failed: {result.get('status')} - {result.get('error')}")
+            status = result.get('status', 'UNKNOWN').upper()
+            logger.error("[%s] Failed for %s: %s", status, args.email, result.get('error'))
             return 1
 
     except Exception as e:
-        print(f"Got an error: {e}")
+        logger.error("[UNKNOWN_ERROR] Got an error: %s", e)
         return 1
 
 def do_batch(args):
@@ -107,11 +112,11 @@ def do_batch(args):
         print("\n--- Batch Run Finished ---")
         print(f"Total: {summary['total']}")
         print(f"Success: {summary['succeeded']}")
-        print(f"Magic Link: {summary['magic_link']}")
+        print(f"Magic Link: {summary['magic_link_accounts']}")
         print(f"Failed: {summary['failed']}")
         return 0
     except Exception as e:
-        print(f"Batch run failed: {e}")
+        logger.error("[BATCH_ERROR] Batch run failed: %s", e)
         return 1
 
 def main():

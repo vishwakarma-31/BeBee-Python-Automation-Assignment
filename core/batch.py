@@ -30,7 +30,7 @@ def run_single_job(account, proxy, output_csv):
         if not warm_up_session(session):
             write_result(output_csv, email, password, "network_error")
             logging.info("Finished job for %s", email)
-            logging.warning("Job failed for %s -> network_error", email)
+            logging.warning("[NETWORK_ERROR] Job failed for %s -> network_error", email)
             return "network_error"
         
         result = run_login(session, email, password)
@@ -42,15 +42,15 @@ def run_single_job(account, proxy, output_csv):
         if status == "success":
             logging.info("Job succeeded for %s", email)
         else:
-            logging.warning("Job failed for %s -> %s", email, status)
+            logging.warning("[%s] Job failed for %s", status.upper(), email)
             
         return status
 
     except Exception as e:
-        logging.error("Error on %s: %s", email, e)
+        logging.error("[UNKNOWN_ERROR] Error on %s: %s", email, e)
         write_result(output_csv, email, password, "unknown_error")
         logging.info("Finished job for %s", email)
-        logging.warning("Job failed for %s -> unknown_error", email)
+        logging.warning("[UNKNOWN_ERROR] Job failed for %s -> unknown_error", email)
         return "unknown_error"
 
 def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
@@ -70,7 +70,7 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
         "total": len(accounts),
         "succeeded": 0,
         "failed": 0,
-        "magic_link": 0
+        "magic_link_accounts": 0
     }
 
     proxy_iter = cycle(proxies) if proxies else None
@@ -82,7 +82,7 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
             if status == "success":
                 summary["succeeded"] += 1
             elif status == "magic_link_sent":
-                summary["magic_link"] += 1
+                summary["magic_link_accounts"] += 1
             else:
                 summary["failed"] += 1
     else:
@@ -98,7 +98,7 @@ def run_batch_login(input_csv, output_csv, workers=1, proxies=None):
                 if status == "success":
                     summary["succeeded"] += 1
                 elif status == "magic_link_sent":
-                    summary["magic_link"] += 1
+                    summary["magic_link_accounts"] += 1
                 else:
                     summary["failed"] += 1
 

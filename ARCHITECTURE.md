@@ -23,6 +23,6 @@ I decided to keep things simple but organized. I split the code into a `core` fo
 
 ## Why I did it this way
 
-I didn't want to overcomplicate things with too many extra files. The `requests` library handles the session cookies automatically, which is awesome. For the batch processing, `ThreadPoolExecutor` made it really easy to run things in parallel without having to write crazy manual threading code. I also made sure every thread gets its own `requests.Session()` because sharing a single session across threads usually causes weird bugs.
+The `requests` library handles the session cookies automatically, which is awesome. For the batch processing, `ThreadPoolExecutor` made it really easy to run things in parallel without having to write crazy manual threading code. I also made sure every thread gets its own `requests.Session()` because sharing a single session across threads usually causes weird bugs.
 
 For error handling, instead of making big complicated custom error classes, I just used a `status` string in the dictionary returned by the functions (like `network_error` or `invalid_credentials`). This made it really easy to see why something failed and log it out directly to the console.

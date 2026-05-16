@@ -9,7 +9,7 @@
 ## Known Risks / Issues
 - **Cloudflare/CAPTCHA:** BeBee seems to use CloudFront, but if they ever turn on Cloudflare bot protection, this `requests`-based script will probably get blocked pretty fast. We'd have to switch to something like Selenium or Playwright.
 - **Proxy rotation:** Right now, I'm just cycling through the proxy list sequentially. If one proxy is completely dead, any account that gets assigned that proxy will just fail.
-- **Email Verification:** The signup process isn't fully 100% automated right now because it requires you to manually copy/paste the email link.
+- **Email Verification (`--prompt-token`):** The signup process isn't fully 100% automated right now because it requires you to manually copy/paste the email link. This means if you use `--prompt-token` in a batch signup, it will literally pause the entire script and wait for user input, breaking true automation. Email IMAP automation was out of scope for now, but would be needed to fix this.
 
 ## Future Improvements
 - **Automate Email Verification:** I would love to use an IMAP library or a temporary email service API (like Mailosaur or 1secmail) so the script could create an inbox, sign up, wait for the email, grab the token, and verify it all automatically.
